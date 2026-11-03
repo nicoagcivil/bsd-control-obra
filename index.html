@@ -86,7 +86,7 @@
                 </h2>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                    <!-- Nombre del Operador (NUEVO CAMPO) -->
+                    <!-- Nombre del Operador -->
                     <div class="md:col-span-3 sm:col-span-1">
                         <label class="block text-sm font-medium text-slate-300 mb-1.5">Nombre y Apellido del Operador</label>
                         <input type="text" id="operador-input" placeholder="Ej: Juan Pérez" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#b41f25] focus:border-transparent transition-all" required>
@@ -283,11 +283,11 @@
                 <button type="button" id="btn-limpiar" class="px-6 py-3 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition-all">
                     Limpiar Formulario
                 </button>
-                <button type="submit" class="px-8 py-3 rounded-xl bg-[#b41f25] hover:bg-[#9b1a1f] text-white font-bold shadow-lg shadow-[#b41f25]/20 transition-all flex items-center justify-center gap-2">
+                <button type="submit" id="btn-submit" class="px-8 py-3 rounded-xl bg-[#b41f25] hover:bg-[#9b1a1f] text-white font-bold shadow-lg shadow-[#b41f25]/20 transition-all flex items-center justify-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    Generar Reporte Completo
+                    <span>Enviar a Planilla y Generar Reporte</span>
                 </button>
             </div>
 
@@ -332,6 +332,9 @@
 
     <!-- JavaScript Data and Controller Logic -->
     <script>
+        // URL de tu Google Apps Script Web App (Reemplazar cuando lo despliegues)
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwG7YJNmVRsdiwp8p4EhUl_IOEawxMxPPsCBFIrH5Ngp_prudcedvpnEejmvmsJ-oNNXg/exec';
+
         // Data de Equipos por Categoria
         const equiposData = {
             "Camiones": [
@@ -430,6 +433,20 @@
             todosLosEquipos.push(`${eq.nombre} - Int: ${eq.interno} (${eq.empresa})`);
         });
 
+        // Elementos DOM principales
+        const operadorInput = document.getElementById('operador-input');
+        const categoriaSelect = document.getElementById('categoria-select');
+        const equipoSelect = document.getElementById('equipo-select');
+        const sec2Titulo = document.getElementById('sec2-titulo');
+        const form = document.getElementById('obra-form');
+        const resultadoContainer = document.getElementById('resultado-container');
+        const reporteTexto = document.getElementById('reporte-texto');
+        const btnSubmit = document.getElementById('btn-submit');
+        const chkDetencion = document.getElementById('chk-detencion');
+        const panelDetencion = document.getElementById('panel-detencion');
+        const detencionTipo = document.getElementById('detencion-tipo');
+        const containerOtro = document.getElementById('container-detencion-otro');
+
         // Configuración Inicial de Fecha
         document.getElementById('date-display').innerText = new Date().toLocaleDateString('es-AR', { 
             weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
@@ -452,12 +469,6 @@
             btnDia.className = "px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition-all";
         });
 
-        // Elementos Dom
-        const operadorInput = document.getElementById('operador-input');
-        const categoriaSelect = document.getElementById('categoria-select');
-        const equipoSelect = document.getElementById('equipo-select');
-        const sec2Titulo = document.getElementById('sec2-titulo');
-
         // Poblar sectores en Excavadoras
         const selExcSector = document.getElementById('excavadora-sector');
         sectoresExcavacion.forEach(s => {
@@ -467,7 +478,7 @@
             selExcSector.appendChild(opt);
         });
 
-        // Poblar sectores en Equipos Auxiliares (Combina todos los sectores de Obra)
+        // Poblar sectores en Equipos Auxiliares
         const selAuxSector = document.getElementById('auxiliares-ubicacion-select');
         const todosLosSectoresObra = [...new Set([...sectoresExcavacion, ...sectoresRelleno, "Campamento Principal", "Zona Talleres", "Obra Completa / General"])];
         todosLosSectoresObra.forEach(s => {
@@ -506,10 +517,7 @@
             const cat = categoriaSelect.value;
             const eqVal = equipoSelect.value.toLowerCase();
             
-            // Ocultar panel inicial
             document.getElementById('panel-inicial').classList.add('hidden');
-
-            // Ocultar todos los paneles del punto 2
             document.querySelectorAll('.sec-panel').forEach(p => p.classList.add('hidden'));
 
             const esRegador = eqVal.includes("regador");
@@ -543,7 +551,7 @@
                 document.getElementById('panel-livianos').classList.remove('hidden');
             } else if (cat === "EquiposAuxiliares" || eqVal.includes("luminaria") || eqVal.includes("generador") || eqVal.includes("electrógeno")) {
                 sec2Titulo.textContent = "Lugar / Ubicación de Instalación del Equipo";
-                document.getElementById('panel-[#b41f25]').classList.remove('hidden');
+                document.getElementById('panel-auxiliares').classList.remove('hidden');
             } else {
                 sec2Titulo.textContent = "Lugar de Trabajo / Apoyo";
                 document.getElementById('panel-generico').classList.remove('hidden');
@@ -674,11 +682,6 @@
         }
 
         // CONTROL DE DETENCIONES (PUNTO 4)
-        const chkDetencion = document.getElementById('chk-detencion');
-        const panelDetencion = document.getElementById('panel-detencion');
-        const detencionTipo = document.getElementById('detencion-tipo');
-        const containerOtro = document.getElementById('container-detencion-otro');
-
         chkDetencion.addEventListener('change', function() {
             panelDetencion.classList.toggle('hidden', !this.checked);
         });
@@ -687,12 +690,8 @@
             containerOtro.classList.toggle('hidden', this.value !== "Otro");
         });
 
-        // GENERACIÓN DE REPORTE COMPLETO
-        const form = document.getElementById('obra-form');
-        const resultadoContainer = document.getElementById('resultado-container');
-        const reporteTexto = document.getElementById('reporte-texto');
-
-        form.addEventListener('submit', function(e) {
+        // GENERACIÓN DE REPORTE COMPLETO Y ENVÍO A GOOGLE SHEETS
+        form.addEventListener('submit', async function(e) {
             e.preventDefault();
 
             const operador = operadorInput.value.trim();
@@ -713,6 +712,84 @@
             const eqVal = equipo.toLowerCase();
             const esRegador = eqVal.includes("regador");
 
+            let detalleTrabajo = "";
+
+            if (categoria === "Excavadoras") {
+                const sec = document.getElementById('excavadora-sector').value || 'Sin especificar';
+                detalleTrabajo = `Frente: EXCAVACIÓN | Sector: ${sec}`;
+            } else if (esRegador) {
+                const items = document.querySelectorAll('.camion-viaje-item');
+                let totalViajes = 0;
+                let tramos = [];
+                items.forEach((item, idx) => {
+                    const origenEl = item.querySelector('.viaje-origen');
+                    const origen = origenEl ? origenEl.value || 'Pozo N/I' : 'Pozo N/I';
+                    const sec = item.querySelector('.viaje-sector').value || 'Sin sector';
+                    const cant = parseInt(item.querySelector('.viaje-cant').value || 0);
+                    totalViajes += cant;
+                    tramos.push(`[${origen} -> ${sec}: ${cant} vjs]`);
+                });
+                detalleTrabajo = `Riego: ${tramos.join(', ')} | Total Viajes: ${totalViajes}`;
+            } else if (categoria === "Camiones") {
+                const items = document.querySelectorAll('.camion-viaje-item');
+                let totalViajes = 0;
+                let tramos = [];
+                items.forEach((item, idx) => {
+                    const sec = item.querySelector('.viaje-sector').value || 'Sin sector';
+                    const cant = parseInt(item.querySelector('.viaje-cant').value || 0);
+                    totalViajes += cant;
+                    tramos.push(`[${sec}: ${cant} vjs]`);
+                });
+                detalleTrabajo = `Viajes: ${tramos.join(', ')} | Total: ${totalViajes}`;
+            } else if (categoria === "Viales") {
+                let sectores = [];
+                const items = document.querySelectorAll('.vial-sector-val');
+                items.forEach((item) => {
+                    if (item.value) sectores.push(item.value);
+                });
+                detalleTrabajo = `Frente: RELLENO | Sectores: ${sectores.join(', ')}`;
+            } else if (categoria === "Livianos") {
+                detalleTrabajo = `Obra Completa / Trabajo General (Apoyo & Servicio)`;
+            } else if (categoria === "EquiposAuxiliares") {
+                const ubicacionAux = document.getElementById('auxiliares-ubicacion-select').value || "No especificada";
+                detalleTrabajo = `Ubicación: ${ubicacionAux}`;
+            } else {
+                const repartos = document.querySelectorAll('.reparto-item');
+                let entregas = [];
+                repartos.forEach((r) => {
+                    const rec = r.querySelector('.reparto-receptor').value || 'N/E';
+                    const lt = r.querySelector('.reparto-litros').value || '0';
+                    entregas.push(`[${lt}L -> ${rec}]`);
+                });
+                detalleTrabajo = `Repartos: ${entregas.join(', ')}`;
+            }
+
+            const gasoilLts = document.getElementById('gasoil-litros').value || 0;
+
+            let detencionInfo = "OPERATIVO SIN DETENCIONES";
+            if (chkDetencion.checked) {
+                let tipo = detencionTipo.value;
+                if (tipo === "Otro") {
+                    const otroTxt = document.getElementById('detencion-otro-texto').value || "No especificado";
+                    tipo = `Otro (${otroTxt})`;
+                }
+                const obs = document.getElementById('detencion-observacion').value || "";
+                detencionInfo = `DETENIDO - Motivo: ${tipo} ${obs ? '| Obs: ' + obs : ''}`;
+            }
+
+            // Armar objeto de datos para enviar a Google Sheets
+            const payloadData = {
+                fecha: fechaStr,
+                turno: turnoSeleccionado,
+                operador: operador,
+                categoria: categoria,
+                equipo: equipo,
+                detalleTrabajo: detalleTrabajo,
+                gasoil: gasoilLts,
+                detencion: detencionInfo
+            };
+
+            // Construcción del texto consolidado local
             let reporte = `📋 REPORTE DIARIO DE OBRA - MOVIMIENTO DE SUELOS\n`;
             reporte += `--------------------------------------------------\n`;
             reporte += `📅 Fecha: ${fechaStr} | ⏱️ Shift: ${turnoSeleccionado}\n`;
@@ -720,89 +797,39 @@
             reporte += `🚜 Equipo: ${equipo}\n`;
             reporte += `📂 Categoría: ${categoria}\n`;
             reporte += `--------------------------------------------------\n\n`;
-
-            // PUNTO 2: DETALLE TRABAJO
-            reporte += `📍 2. LUGAR DE TRABAJO Y TAREAS:\n`;
-
-            if (categoria === "Excavadoras") {
-                const sec = document.getElementById('excavadora-sector').value || 'Sin especificar';
-                reporte += `   • Frente: EXCAVACIÓN\n`;
-                reporte += `   • Sector: ${sec}\n`;
-            } else if (esRegador) {
-                reporte += `   • Registro de Viajes de Riego (Origen Pozo -> Sector Destino):\n`;
-                const items = document.querySelectorAll('.camion-viaje-item');
-                let totalViajes = 0;
-                items.forEach((item, idx) => {
-                    const origenEl = item.querySelector('.viaje-origen');
-                    const origen = origenEl ? origenEl.value || 'Pozo N/I' : 'Pozo N/I';
-                    const sec = item.querySelector('.viaje-sector').value || 'Sin sector';
-                    const cant = parseInt(item.querySelector('.viaje-cant').value || 0);
-                    totalViajes += cant;
-                    reporte += `     - Tramo ${idx + 1} [Desde: ${origen} -> Riego: ${sec}]: ${cant} viajes\n`;
-                });
-                reporte += `   • TOTAL VIAJES DE RIEGO DEL DÍA: ${totalViajes}\n`;
-            } else if (categoria === "Camiones") {
-                reporte += `   • Registro de Viajes por Sector:\n`;
-                const items = document.querySelectorAll('.camion-viaje-item');
-                let totalViajes = 0;
-                items.forEach((item, idx) => {
-                    const sec = item.querySelector('.viaje-sector').value || 'Sin sector';
-                    const cant = parseInt(item.querySelector('.viaje-cant').value || 0);
-                    totalViajes += cant;
-                    reporte += `     - Tramo ${idx + 1} [${sec}]: ${cant} viajes\n`;
-                });
-                reporte += `   • TOTAL VIAJES DEL DÍA: ${totalViajes}\n`;
-            } else if (categoria === "Viales") {
-                reporte += `   • Frente: RELLENO\n`;
-                reporte += `   • Sectores Intervenidos:\n`;
-                const items = document.querySelectorAll('.vial-sector-val');
-                items.forEach((item, idx) => {
-                    if (item.value) reporte += `     - Sector ${idx + 1}: ${item.value}\n`;
-                });
-            } else if (categoria === "Livianos") {
-                reporte += `   • Asignación: OBRA COMPLETA / TRABAJO GENERAL (Incluye Movil Taller/Mecánicos)\n`;
-            } else if (categoria === "EquiposAuxiliares") {
-                const ubicacionAux = document.getElementById('auxiliares-ubicacion-select').value || "Ubicación no especificada";
-                reporte += `   • Ubicación de Instalación / Operación: ${ubicacionAux}\n`;
-            } else {
-                const repartos = document.querySelectorAll('.reparto-item');
-                if (repartos.length > 0) {
-                    reporte += `   • Entregas de Combustible (Cisterna):\n`;
-                    repartos.forEach((r, idx) => {
-                        const rec = r.querySelector('.reparto-receptor').value || 'No especificado';
-                        const lt = r.querySelector('.reparto-litros').value || '0';
-                        reporte += `     - Entrega ${idx + 1}: ${lt} Lts -> ${rec}\n`;
-                    });
-                }
-            }
-
-            // PUNTO 3: GASOIL
-            const gasoilLts = document.getElementById('gasoil-litros').value || 0;
-            reporte += `\n⛽ 3. CONSUMO DE COMBUSTIBLE:\n`;
-            reporte += `   • Carga de Gasoil (Tanque Propio): ${gasoilLts} Litros\n`;
-
-            // PUNTO 4: NOVEDADES / DETENCIONES
-            reporte += `\n⚠️ 4. NOVEDADES Y DETENCIONES:\n`;
-            if (chkDetencion.checked) {
-                let tipo = detencionTipo.value;
-                if (tipo === "Otro") {
-                    const otroTxt = document.getElementById('detencion-otro-texto').value || "No especificado";
-                    tipo = `Otro (${otroTxt})`;
-                }
-                const obs = document.getElementById('detencion-observacion').value || "Sin observaciones adicionadas.";
-                reporte += `   • Estado: CON DETENCIÓN / PARADA\n`;
-                reporte += `   • Motivo: ${tipo}\n`;
-                reporte += `   • Descripción: ${obs}\n`;
-            } else {
-                reporte += `   • Estado: OPERATIVO SIN DETENCIONES REGISTRADAS\n`;
-            }
-
+            reporte += `📍 2. TRABAJO Y ACTIVIDAD:\n   ${detalleTrabajo}\n`;
+            reporte += `\n⛽ 3. GASOIL: ${gasoilLts} Lts\n`;
+            reporte += `\n⚠️ 4. DETENCIONES: ${detencionInfo}\n`;
             reporte += `--------------------------------------------------\n`;
 
             reporteTexto.innerText = reporte;
             resultadoContainer.classList.remove('hidden');
+
+            // Intento de envío a Google Sheets (Si la URL está configurada)
+            if (GOOGLE_SCRIPT_URL && GOOGLE_SCRIPT_URL !== 'REEMPLAZAR_CON_TU_URL_DE_WEB_APP') {
+                btnSubmit.disabled = true;
+                btnSubmit.classList.add('opacity-50');
+                showToast("Enviando a Google Sheets...");
+
+                try {
+                    await fetch(GOOGLE_SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payloadData)
+                    });
+                    showToast("¡Enviado a la planilla exitosamente!");
+                } catch (err) {
+                    showToast("Reporte listo (No se pudo conectar a Sheets)");
+                } finally {
+                    btnSubmit.disabled = false;
+                    btnSubmit.classList.remove('opacity-50');
+                }
+            } else {
+                showToast("Reporte generado (Configura Google Script para envío directo)");
+            }
+
             resultadoContainer.scrollIntoView({ behavior: 'smooth' });
-            showToast("Reporte generado con éxito");
         });
 
         // BOTÓN COPIAR REPORTE
