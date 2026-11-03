@@ -82,12 +82,18 @@
                 <div class="absolute top-0 left-0 w-1.5 h-full bg-[#b41f25]"></div>
                 <h2 class="text-lg font-semibold text-[#b41f25] flex items-center gap-2 mb-4">
                     <span class="bg-[#b41f25]/10 text-[#b41f25] w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold border border-[#b41f25]/20">1</span>
-                    Identificación del Equipo
+                    Identificación del Operador y Equipo
                 </h2>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <!-- Nombre del Operador (NUEVO CAMPO) -->
+                    <div class="md:col-span-3 sm:col-span-1">
+                        <label class="block text-sm font-medium text-slate-300 mb-1.5">Nombre y Apellido del Operador</label>
+                        <input type="text" id="operador-input" placeholder="Ej: Juan Pérez" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#b41f25] focus:border-transparent transition-all" required>
+                    </div>
+
                     <!-- Categoría -->
-                    <div>
+                    <div class="md:col-span-1">
                         <label class="block text-sm font-medium text-slate-300 mb-1.5">Categoría de Equipo</label>
                         <select id="categoria-select" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#b41f25] focus:border-transparent transition-all" required>
                             <option value="">Seleccione categoría...</option>
@@ -101,7 +107,7 @@
                     </div>
 
                     <!-- Selector Específico -->
-                    <div>
+                    <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-slate-300 mb-1.5">Equipo Específico (Interno / Empresa)</label>
                         <select id="equipo-select" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#b41f25] focus:border-transparent transition-all disabled:opacity-40 disabled:cursor-not-allowed" disabled required>
                             <option value="">Primero seleccione una categoría...</option>
@@ -447,6 +453,7 @@
         });
 
         // Elementos Dom
+        const operadorInput = document.getElementById('operador-input');
         const categoriaSelect = document.getElementById('categoria-select');
         const equipoSelect = document.getElementById('equipo-select');
         const sec2Titulo = document.getElementById('sec2-titulo');
@@ -536,7 +543,7 @@
                 document.getElementById('panel-livianos').classList.remove('hidden');
             } else if (cat === "EquiposAuxiliares" || eqVal.includes("luminaria") || eqVal.includes("generador") || eqVal.includes("electrógeno")) {
                 sec2Titulo.textContent = "Lugar / Ubicación de Instalación del Equipo";
-                document.getElementById('panel-auxiliares').classList.remove('hidden');
+                document.getElementById('panel-[#b41f25]').classList.remove('hidden');
             } else {
                 sec2Titulo.textContent = "Lugar de Trabajo / Apoyo";
                 document.getElementById('panel-generico').classList.remove('hidden');
@@ -688,8 +695,14 @@
         form.addEventListener('submit', function(e) {
             e.preventDefault();
 
+            const operador = operadorInput.value.trim();
             const equipo = equipoSelect.value;
             const categoria = categoriaSelect.value;
+
+            if (!operador) {
+                showToast("Por favor, ingrese el nombre del operador");
+                return;
+            }
 
             if (!equipo) {
                 showToast("Por favor, seleccione un equipo");
@@ -703,6 +716,7 @@
             let reporte = `📋 REPORTE DIARIO DE OBRA - MOVIMIENTO DE SUELOS\n`;
             reporte += `--------------------------------------------------\n`;
             reporte += `📅 Fecha: ${fechaStr} | ⏱️ Shift: ${turnoSeleccionado}\n`;
+            reporte += `👤 Operador: ${operador}\n`;
             reporte += `🚜 Equipo: ${equipo}\n`;
             reporte += `📂 Categoría: ${categoria}\n`;
             reporte += `--------------------------------------------------\n\n`;
@@ -806,17 +820,18 @@
         // BOTÓN CSV
         document.getElementById('btn-csv').addEventListener('click', function() {
             const fechaStr = new Date().toISOString().split('T')[0];
+            const operador = operadorInput.value.trim() || "SinOperador";
             const equipo = equipoSelect.value || "SinEquipo";
             const gasoilLts = document.getElementById('gasoil-litros').value || 0;
             
             let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Fecha,Turno,Categoria,Equipo,Gasoil_Litros,Detencion\n";
-            csvContent += `"${fechaStr}","${turnoSeleccionado}","${categoriaSelect.value}","${equipo}",${gasoilLts},"${chkDetencion.checked ? 'SI' : 'NO'}"\n`;
+            csvContent += "Fecha,Turno,Operador,Categoria,Equipo,Gasoil_Litros,Detencion\n";
+            csvContent += `"${fechaStr}","${turnoSeleccionado}","${operador}","${categoriaSelect.value}","${equipo}",${gasoilLts},"${chkDetencion.checked ? 'SI' : 'NO'}"\n`;
 
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `Reporte_Obra_${fechaStr}_${equipo.substring(0,10)}.csv`);
+            link.setAttribute("download", `Reporte_Obra_${fechaStr}_${operador.replace(/\s+/g, '_')}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
